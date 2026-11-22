@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>应急预案智能审查</title>
+<style>
+:root {
+  --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #667085; --line: #e4e7ec;
+  --accent: #2f5bd3; --accent-soft: #e8eefc;
+  --sev-critical: #b42318; --sev-critical-bg: #fde8e7;
+  --sev-high: #b54708; --sev-high-bg: #fef0e0;
+  --sev-mid: #175cd3; --sev-mid-bg: #e6effc;
+  --sev-low: #475467; --sev-low-bg: #eef0f3;
+  --ok: #067647;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --card: #1b2029; --text: #e6e9ef; --muted: #98a2b3; --line: #2c3340;
+    --accent: #7c9cf0; --accent-soft: #24304d;
+    --sev-critical: #f97066; --sev-critical-bg: #3d1a18;
+    --sev-high: #fdb022; --sev-high-bg: #3a2a12;
+    --sev-mid: #84adff; --sev-mid-bg: #1d2b47;
+    --sev-low: #b4bcc8; --sev-low-bg: #2a303b;
+    --ok: #47cd89;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
+main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+h1 { font-size: 22px; margin: 0; font-weight: 600; }
+.sub { color: var(--muted); margin: 4px 0 0; font-size: 14px; }
+.pill { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); color: var(--muted); }
+.pill.on { color: var(--ok); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.drop { border: 1.5px dashed var(--line); border-radius: 10px; padding: 22px; text-align: center; cursor: pointer; color: var(--muted); }
+.drop.has { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
+.drop input { display: none; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+label.chk { display: flex; gap: 8px; align-items: center; }
+textarea { width: 100%; min-height: 64px; margin-top: 10px; padding: 10px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text); font: inherit; font-size: 14px; resize: vertical; }
+button, .btn { font: inherit; font-size: 14px; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--card); color: var(--text); cursor: pointer; text-decoration: none; display: inline-block; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.hint { color: var(--muted); font-size: 13px; }
+.steps { list-style: none; padding: 0; margin: 0; }
+.steps li { display: grid; grid-template-columns: 22px 110px 1fr auto; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.steps li:last-child { border-bottom: 0; }
+.steps .t { color: var(--muted); font-size: 13px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); margin-top: 6px; }
+.dot.run { background: var(--accent); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+.summary { font-size: 15px; padding: 12px 14px; background: var(--accent-soft); border-radius: 8px; margin-bottom: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.tile { border-radius: 10px; padding: 10px 12px; }
+.tile b { font-size: 22px; display: block; line-height: 1.2; }
+.s-严重 { background: var(--sev-critical-bg); color: var(--sev-critical); }
+.s-高 { background: var(--sev-high-bg); color: var(--sev-high); }
+.s-中 { background: var(--sev-mid-bg); color: var(--sev-mid); }
+.s-低 { background: var(--sev-low-bg); color: var(--sev-low); }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.filters button { padding: 4px 12px; font-size: 13px; border-radius: 999px; }
+.filters button.on { background: var(--text); color: var(--card); border-color: var(--text); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: 13px; white-space: nowrap; }
+.badge { font-size: 12px; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+td.orig { color: var(--muted); max-width: 260px; }
+.err { color: var(--sev-critical); }
+.hidden { display: none; }
+@media (max-width: 640px) {
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .steps li { grid-template-columns: 22px 1fr auto; }
+  .steps li .msg { grid-column: 2 / -1; }
+  td.orig { display: none; } th.orig { display: none; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>应急预案智能审查</h1>
+      <p class="sub">上传《生产安全事故应急预案》，自动查找编号错误、名单不一致、前后矛盾、套改残留和文档损坏。</p>
+    </div>
+    <span id="llm-pill" class="pill">检查服务器…</span>
+  </header>
+
+  <section class="card">
+    <label id="drop" class="drop">
+      <input id="file" type="file" accept=".docx">
+      <span id="drop-text">点击选择或拖入 .docx 文件</span>
+    </label>
+    <div class="row">
+      <label class="chk"><input id="use-llm" type="checkbox"> 用大模型检查套改残留（内容先脱敏再发送，约 0.2 元一份）</label>
+    </div>
+    <textarea id="profile" placeholder="补充画像（可选）：例如「实验室研发，租用办公楼 5 层，员工 6 人，没有生产车间和叉车」。写得越具体，套改残留查得越准。"></textarea>
+    <div class="row">
+      <button id="go" class="primary" disabled>开始审查</button>
+      <button id="demo">用示例预案试一试</button>
+      <a class="btn" href="/api/demo.docx">下载示例预案</a>
+      <span class="hint">示例预案是虚构的，里面故意埋了各类错误。上传的文件审查完即删除。</span>
+    </div>
+  </section>
+
+  <section id="progress" class="card hidden">
+    <ul id="steps" class="steps"></ul>
+    <p id="error" class="err hidden"></p>
+  </section>
+
+  <section id="results" class="card hidden">
+    <div id="summary" class="summary"></div>
+    <div id="tiles" class="tiles"></div>
+    <div class="filters" id="filters"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>程度</th><th>检查项</th><th>位置</th><th class="orig">原文</th><th>问题</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="row"><a id="download" class="btn" href="#">下载 Markdown 报告</a></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const NODES = ['解析文档', '制定计划', '规则检查', '大模型检查', '汇总定级', '写审查结论'];
+const SEV = ['严重', '高', '中', '低'];
+let findings = [], filter = '全部', polling = null;
+
+fetch('/api/health').then(r => r.json()).then(h => {
+  const pill = $('llm-pill');
+  pill.textContent = h.llm_configured ? 'DeepSeek 已配置' : 'DeepSeek 未配置（只跑规则检查）';
+  pill.classList.toggle('on', h.llm_configured);
+  $('use-llm').disabled = !h.llm_configured;
+}).catch(() => { $('llm-pill').textContent = '服务器连不上'; });
+
+const fileInput = $('file'), drop = $('drop');
+fileInput.addEventListener('change', () => pick(fileInput.files[0]));
+drop.addEventListener('dragover', e => { e.preventDefault(); });
+drop.addEventListener('drop', e => { e.preventDefault(); pick(e.dataTransfer.files[0]); });
+let chosen = null;
+function pick(f) {
+  chosen = f && f.name.toLowerCase().endsWith('.docx') ? f : null;
+  $('drop-text').textContent = chosen ? chosen.name : '只支持 .docx 文件，请重新选择';
+  drop.classList.toggle('has', !!chosen);
+  $('go').disabled = !chosen;
+}
+
+$('go').onclick = () => {
+  const fd = new FormData();
+  fd.append('file', chosen);
+  fd.append('use_llm', $('use-llm').checked);
+  fd.append('profile', $('profile').value);
+  start(fetch('/api/reviews', { method: 'POST', body: fd }));
+};
+$('demo').onclick = () => {
+  const fd = new FormData();
+  fd.append('use_llm', $('use-llm').checked);
+  start(fetch('/api/reviews/demo', { method: 'POST', body: fd }));
+};
+
+async function start(req) {
+  clearInterval(polling);
+  $('results').classList.add('hidden');
+  $('progress').classList.remove('hidden');
+  $('error').classList.add('hidden');
+  $('steps').innerHTML = '<li><span class="dot run"></span><span>上传中</span><span></span><span></span></li>';
+  setBusy(true);
+  try {
+    const r = await req;
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || r.statusText);
+    polling = setInterval(() => poll(data.id), 700);
+  } catch (e) { fail(e.message); }
+}
+
+async function poll(id) {
+  try {
+    const r = await fetch('/api/reviews/' + id);
+    const job = await r.json();
+    if (!r.ok) throw new Error(job.detail || r.statusText);
+    renderSteps(job);
+    if (job.status === 'done') { clearInterval(polling); setBusy(false); renderResult(job); }
+    if (job.status === 'error') { clearInterval(polling); fail(job.error); }
+  } catch (e) { clearInterval(polling); fail(e.message); }
+}
+
+function renderSteps(job) {
+  const done = job.trace || [];
+  const expected = job.use_llm ? NODES : NODES.filter(n => n !== '大模型检查');
+  let html = done.map(t => `<li><span class="dot"></span><span>${esc(t.node)}</span><span class="msg">${esc(t.message)}</span><span class="t">${t.seconds}s</span></li>`).join('');
+  if (job.status === 'running') {
+    const next = expected.find(n => !done.some(t => t.node === n));
+    if (next) html += `<li><span class="dot run"></span><span>${esc(next)}</span><span class="msg t">进行中…</span><span></span></li>`;
+  }
+  $('steps').innerHTML = html;
+}
+
+function renderResult(job) {
+  const res = job.result;
+  findings = res.findings || [];
+  $('summary').textContent = res.summary;
+  const by = res.stats.by_severity || {};
+  $('tiles').innerHTML = SEV.map(s => `<div class="tile s-${s}"><b>${by[s] || 0}</b>${s}</div>`).join('');
+  const codes = ['全部', ...Object.keys(res.stats.by_check || {}).sort()];
+  filter = '全部';
+  $('filters').innerHTML = codes.map(c => `<button data-c="${c}">${c === '全部' ? '全部 ' + findings.length : c + ' ' + res.stats.by_check[c]}</button>`).join('');
+  $('filters').querySelectorAll('button').forEach(b => b.onclick = () => { filter = b.dataset.c; renderRows(); });
+  $('download').href = `/api/reviews/${job.id}/report.md`;
+  $('download').download = `审查报告_${job.name.replace(/\.docx$/i, '')}.md`;
+  renderRows();
+  $('results').classList.remove('hidden');
+}
+
+function renderRows() {
+  $('filters').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.c === filter));
+  const rows = findings.filter(f => filter === '全部' || f.code === filter);
+  $('rows').innerHTML = rows.map(f => `<tr>
+    <td><span class="badge s-${f.severity}">${f.severity}</span></td>
+    <td>${esc(f.check)}</td>
+    <td>${esc(f.section)}<br><span class="hint">第 ${f.para_index} 段</span></td>
+    <td class="orig">${esc(f.text.length > 60 ? f.text.slice(0, 60) + '…' : f.text)}</td>
+    <td>${esc(f.problem)}</td></tr>`).join('') || '<tr><td colspan="5" class="hint">没有问题</td></tr>';
+}
+
+function setBusy(b) { $('go').disabled = b || !chosen; $('demo').disabled = b; }
+function fail(msg) { setBusy(false); const e = $('error'); e.textContent = '出错了：' + msg; e.classList.remove('hidden'); }
+</script>
+</body>
+</html>

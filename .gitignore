@@ -1,0 +1,11 @@
+# 含客户真实信息，绝不能公开
+output/
+tmp/
+data/private/
+
+.claude/
+.thread-workspace.json
+__pycache__/
+*.pyc
+.venv/
+.env

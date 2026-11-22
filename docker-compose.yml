@@ -1,0 +1,12 @@
+services:
+  plan-review:
+    build:
+      context: .
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+    ports:
+      - "8000:8000"
+    environment:
+      # 从本机环境变量或 .env 文件读取，不写进仓库；不设置就只跑规则检查
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+    restart: unless-stopped

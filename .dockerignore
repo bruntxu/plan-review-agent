@@ -1,0 +1,12 @@
+# 客户数据和本机文件绝不能进镜像
+output/
+tmp/
+data/
+.venv/
+.env
+.git/
+__pycache__/
+*.pyc
+docs/
+tests/
+.claude/

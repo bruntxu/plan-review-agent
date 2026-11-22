@@ -1,0 +1,5 @@
+# 2026-11-22 实际安装并测试过的版本（Docker 镜像按这个装）
+langgraph==1.2.24
+fastapi==0.165.0
+uvicorn==0.54.0
+python-multipart==0.0.34
